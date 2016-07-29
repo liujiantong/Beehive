@@ -106,14 +106,14 @@ class Honeycomb:
 
 class Bee:
 
-    def __init__(self, bee_id, premium, comb, pool_percent=defalut_small_pool_ratio):
+    def __init__(self, bee_id, premium, comb, pool_ratio=defalut_small_pool_ratio):
         self.id = bee_id
         self.honeycomb = comb
         self.premium = premium
         self.balance = 0
-        self.small_pool_percent = pool_percent
+        self.small_pool_ratio = pool_ratio
 
-        small_pool = int(math.floor(self.premium * self.small_pool_percent))
+        small_pool = int(math.floor(self.premium * self.small_pool_ratio))
         self.balance += small_pool
         self.honeycomb.join_bee__(self, premium - small_pool)
 
@@ -128,7 +128,7 @@ class Bee:
             return remaining
 
     def renew(self):
-        small_pool = self.premium * self.small_pool_percent
+        small_pool = self.premium * self.small_pool_ratio
         self.balance += small_pool
         self.honeycomb.hive.renew(self.premium - small_pool)
 
