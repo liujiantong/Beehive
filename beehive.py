@@ -16,16 +16,16 @@ import matplotlib.pyplot as plt
 small_pool_percent = 0.25
 
 premium_mu = 1500
-premium_sigma = 300
+premium_sigma = 400
 
 charge_mu = 300
-charge_sigma = 50
+charge_sigma = 100
 
 N_Days = 365
 
 claim_freq_lambda = 50
 
-honeycomb_size_in_hive = 1000
+honeycomb_size_in_hive = 100
 bee_size_in_honeycomb = 5
 
 
@@ -55,9 +55,9 @@ class Beehive:
         return [bee for comb in self.all_honeycombs for bee in comb.bees]
 
     def __str__(self):
-        str_val = "Beehive simulation | balance:%d\n" % self.balance
+        str_val = "Beehive simulation | balance:%d\n\n" % self.balance
         for comb in self.all_honeycombs:
-            str_val += '\n%s\n' % comb
+            str_val += '%s\n' % comb
         return str_val
 
 
@@ -79,21 +79,26 @@ class Honeycomb:
         if sum > premium:
             # charge everyone in same comb
             for bee in self.bees:
-                fee = bee.balance / sum
-                bee.balance -= fee
+                ratio = bee.balance / sum
+                bee.balance -= premium * ratio
         else:
             delta = premium - sum
             for bee in self.bees:
                 bee.balance = 0
 
             remaining = self.hive.balance - delta
+            self.hive.balance = remaining
             if remaining < 0:
                 raise BankruptException('OMG, I bankrupted!')
-            else:
-                self.hive.balance = remaining
+
+    def balance(self):
+        return reduce((lambda x, y: x + y), [b.balance for b in self.bees])
 
     def __str__(self):
-        return "[Honeycomb:%d\n%s\n]" % (self.id, str([str(bee) for bee in self.bees]))
+        return "[Honeycomb:%d | balance:%d]" % (self.id, self.balance())
+
+    def detail(self):
+        return "[Honeycomb:%d\n%s]" % (self.id, str([str(bee) for bee in self.bees]))
 
 
 class Bee:
@@ -127,16 +132,22 @@ class Bee:
         return '[Bee:%d | comb_id:%d | balance:%d]' % (self.id, self.honeycomb.id, self.balance)
 
 
-def generate_premium():
-    return int(random.gauss(premium_mu, premium_sigma))
+class Random:
 
+    def __init__(self):
+        pass
 
-def generate_charge(size):
-    return np.random.normal(charge_mu, charge_sigma, size)
+    @classmethod
+    def generate_premium(cls, size):
+        return np.random.normal(premium_mu, premium_sigma, size)
 
+    @classmethod
+    def generate_charge(cls, size):
+        return np.random.normal(charge_mu, charge_sigma, size)
 
-def generate_claim_event(days):
-    return np.random.poisson(claim_freq_lambda, days)
+    @classmethod
+    def generate_claim_event(cls, days):
+        return np.random.poisson(claim_freq_lambda, days)
 
 
 if __name__ == "__main__":
@@ -147,6 +158,8 @@ if __name__ == "__main__":
     the_bee_id = 0
     the_hive = Beehive()
 
+    premiums = Random.generate_premium(honeycomb_size_in_hive * bee_size_in_honeycomb)
+
     for i in xrange(honeycomb_size_in_hive):
         the_comb_id += 1
         comb = Honeycomb(the_comb_id, the_hive)
@@ -154,21 +167,25 @@ if __name__ == "__main__":
 
         for j in xrange(bee_size_in_honeycomb):
             the_bee_id += 1
-            premium = generate_premium()
+            # premium = generate_premium()
+            premium = premiums[bee_size_in_honeycomb * i + j]
             bee = Bee(the_bee_id, premium, comb)
             # logging.debug("bee:%d", the_bee_id)
 
     # logging.debug("Beehive:%s", the_hive)
 
-    for evt_num in generate_claim_event(N_Days):
-        charges = generate_charge(evt_num)
-        for i in xrange(evt_num):
-            bee = random.choice(the_hive.bees())
-            charge = int(charges[i])
-            logging.debug("%s charge %d", bee, charge)
-            bee.charge(charge)
+    try:
+        for evt_num in Random.generate_claim_event(N_Days):
+            charges = Random.generate_charge(evt_num)
+            for i in xrange(evt_num):
+                bee = random.choice(the_hive.bees())
+                charge = int(charges[i])
+                logging.debug("%s charge %d", bee, charge)
+                bee.charge(charge)
+    except BankruptException as e:
+        logging.warn(e)
 
-    logging.debug("Beehive:%s", the_hive)
+    logging.info("Beehive:%s", the_hive)
 
-    logging.info("Remaining:%d in Beehive", the_hive.balance)
+    # logging.info("Remaining:%d in Beehive", the_hive.balance)
 
