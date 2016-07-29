@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf8
 
 import argparse
 import random
@@ -13,20 +14,22 @@ from scipy import stats
 import matplotlib.pyplot as plt
 
 
-small_pool_percent = 0.25
-
-premium_mu = 1500
-premium_sigma = 400
-
-charge_mu = 300
-charge_sigma = 100
+defalut_small_pool_ratio = 0.25
 
 N_Days = 365
 
 claim_freq_lambda = 50
 
-honeycomb_size_in_hive = 100
-bee_size_in_honeycomb = 5
+default_honeycomb_size_in_hive = 10000
+default_bee_size_in_honeycomb = 5
+
+# 投保分布参数
+premium_mu = 1500
+premium_sigma = 400
+
+# 索赔金额分布参数
+charge_mu = 300
+charge_sigma = 100
 
 
 class BankruptException(Exception):
@@ -103,13 +106,14 @@ class Honeycomb:
 
 class Bee:
 
-    def __init__(self, bee_id, premium, comb):
+    def __init__(self, bee_id, premium, comb, pool_percent=defalut_small_pool_ratio):
         self.id = bee_id
         self.honeycomb = comb
         self.premium = premium
         self.balance = 0
+        self.small_pool_percent = pool_percent
 
-        small_pool = int(math.floor(self.premium * small_pool_percent))
+        small_pool = int(math.floor(self.premium * self.small_pool_percent))
         self.balance += small_pool
         self.honeycomb.join_bee__(self, premium - small_pool)
 
@@ -124,7 +128,7 @@ class Bee:
             return remaining
 
     def renew(self):
-        small_pool = self.premium * small_pool_percent
+        small_pool = self.premium * self.small_pool_percent
         self.balance += small_pool
         self.honeycomb.hive.renew(self.premium - small_pool)
 
@@ -150,9 +154,31 @@ class Random:
         return np.random.poisson(claim_freq_lambda, days)
 
 
+def output_config(honeycomb_size, bee_size, days, ratio):
+    line_str = "====================================================================="
+    config_str = "%s\n蜂巢小组总数:\t\t%s\n每个小组总人数:\t\t%s\n模拟天数:\t\t%s\n小池比例:\t\t%s\n%s\n" \
+                 % (line_str, honeycomb_size, bee_size, days, ratio, line_str)
+    logging.info(config_str)
+
+
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logging.info("Simulating Beehive...\n")
+
+    parser = argparse.ArgumentParser(description='蜂巢投保模拟程序')
+    parser.add_argument('--comb_num', '-N', type=int, default=default_honeycomb_size_in_hive, help='模拟的蜂巢小组总数')
+    parser.add_argument('--bee_num', '-n', type=int, default=default_bee_size_in_honeycomb, help='模拟的每个小组总人数')
+    parser.add_argument('--days', '-d', type=int, default=N_Days, help='模拟的总天数')
+    parser.add_argument('--ratio', '-r', type=float, default=defalut_small_pool_ratio, help='小池比例')
+
+    args = parser.parse_args()
+
+    honeycomb_size_in_hive = args.comb_num
+    bee_size_in_honeycomb = args.bee_num
+    days = args.days
+    ratio = args.ratio
+
+    output_config(honeycomb_size_in_hive, bee_size_in_honeycomb, days, ratio)
 
     the_comb_id = 0
     the_bee_id = 0
@@ -169,13 +195,13 @@ if __name__ == "__main__":
             the_bee_id += 1
             # premium = generate_premium()
             premium = premiums[bee_size_in_honeycomb * i + j]
-            bee = Bee(the_bee_id, premium, comb)
+            bee = Bee(the_bee_id, premium, comb, ratio)
             # logging.debug("bee:%d", the_bee_id)
 
     # logging.debug("Beehive:%s", the_hive)
 
     try:
-        for evt_num in Random.generate_claim_event(N_Days):
+        for evt_num in Random.generate_claim_event(days):
             charges = Random.generate_charge(evt_num)
             for i in xrange(evt_num):
                 bee = random.choice(the_hive.bees())
