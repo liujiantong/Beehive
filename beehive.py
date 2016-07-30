@@ -18,7 +18,7 @@ defalut_small_pool_ratio = 0.25
 
 N_Days = 365
 
-claim_freq_lambda = 50
+claim_freq_lambda = 10
 
 default_honeycomb_size_in_hive = 10000
 default_bee_size_in_honeycomb = 5
@@ -138,20 +138,63 @@ class Bee:
 
 class Stats:
 
-    def __init__(self):
-        pass
+    def __init__(self, comb_size, bee_size, days, ratio, output_fig='beehive-simulation.png'):
+        self.honeycomb_size = comb_size
+        self.bee_size = bee_size
+        self.days = days
+        self.pool_ratio = ratio
+        self.output_fig = output_fig
 
-    @classmethod
-    def generate_premium(cls, size):
+        self.the_comb_id = 0
+        self.the_bee_id = 0
+        self.the_hive = Beehive()
+
+    @staticmethod
+    def generate_premium(size):
         return np.random.normal(premium_mu, premium_sigma, size)
 
-    @classmethod
-    def generate_charge(cls, size):
+    @staticmethod
+    def generate_charge(size):
         return np.random.normal(charge_mu, charge_sigma, size)
 
-    @classmethod
-    def generate_claim_event(cls, days):
+    @staticmethod
+    def generate_claim_event(days):
         return np.random.poisson(claim_freq_lambda, days)
+
+    def simulate(self):
+        premiums = Stats.generate_premium(self.honeycomb_size * self.bee_size)
+        for i in xrange(honeycomb_size):
+            self.the_comb_id += 1
+            comb = Honeycomb(self.the_comb_id, self.the_hive)
+            # logging.debug("honeycomb:%d", the_comb_id)
+
+            for j in xrange(bee_size):
+                self.the_bee_id += 1
+                premium = premiums[bee_size * i + j]
+                bee = Bee(self.the_bee_id, premium, comb, pool_ratio)
+                # logging.debug("bee:%d", bee)
+
+        # logging.debug("Beehive:%s", the_hive)
+
+        day_cntr = 0
+        evt_sum = 0
+        for evt_num in Stats.generate_claim_event(days):
+            day_cntr += 1
+            try:
+                charges = Stats.generate_charge(evt_num)
+                for i in xrange(evt_num):
+                    evt_sum += 1
+                    bee = random.choice(self.the_hive.bees())
+                    charge = int(charges[i])
+                    logging.debug("%s charge %d", bee, charge)
+                    bee.charge(charge)
+            except BankruptException as e:
+                logging.info("第%d天, 共赔付第%d次, 破产啦 !!!", day_cntr, evt_sum)
+                logging.warn(e)
+                break
+
+        logging.info("Beehive:%s", self.the_hive)
+        # logging.info("Remaining:%d in Beehive", the_hive.balance)
 
 
 def output_config(honeycomb_size, bee_size, sim_count, days, ratio, output_fig):
@@ -159,9 +202,9 @@ def output_config(honeycomb_size, bee_size, sim_count, days, ratio, output_fig):
     config_str = "%s\n" \
                  "  蜂巢小组总数:\t\t%d\n" \
                  "  每个小组总人数:\t%d\n" \
-                 "  模拟次数:\t\t%d\n" \
-                 "  模拟天数:\t\t%d\n" \
-                 "  小池比例:\t\t%s\n" \
+                 "  模拟总次数:\t\t%d\n" \
+                 "  模拟总天数:\t\t%d\n" \
+                 "  小池留存比例:\t\t%s\n" \
                  "  输出图像文件:\t\t%s\n" \
                  "%s\n" \
                  "  赔付频率泊松过程:\tlambda:%d\n" \
@@ -178,57 +221,17 @@ def output_config(honeycomb_size, bee_size, sim_count, days, ratio, output_fig):
     logging.info(config_str)
 
 
-def simulate(honeycomb_size, bee_size, days, ratio, output_fig):
-    the_comb_id = 0
-    the_bee_id = 0
-    the_hive = Beehive()
-    premiums = Stats.generate_premium(honeycomb_size * bee_size)
-    for i in xrange(honeycomb_size):
-        the_comb_id += 1
-        comb = Honeycomb(the_comb_id, the_hive)
-        # logging.debug("honeycomb:%d", the_comb_id)
-
-        for j in xrange(bee_size):
-            the_bee_id += 1
-            # premium = generate_premium()
-            premium = premiums[bee_size * i + j]
-            bee = Bee(the_bee_id, premium, comb, ratio)
-            # logging.debug("bee:%d", the_bee_id)
-
-    # logging.debug("Beehive:%s", the_hive)
-
-    day_cntr = 0
-    evt_sum = 0
-    for evt_num in Stats.generate_claim_event(days):
-        day_cntr += 1
-        try:
-            charges = Stats.generate_charge(evt_num)
-            for i in xrange(evt_num):
-                evt_sum += 1
-                bee = random.choice(the_hive.bees())
-                charge = int(charges[i])
-                logging.debug("%s charge %d", bee, charge)
-                bee.charge(charge)
-        except BankruptException as e:
-            logging.info("第%d天, 共赔付第%d次, 破产啦 !!!", day_cntr, evt_sum)
-            logging.warn(e)
-            break
-
-    logging.info("Beehive:%s", the_hive)
-    # logging.info("Remaining:%d in Beehive", the_hive.balance)
-
-
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logging.info("Simulating Beehive...\n")
 
     parser = argparse.ArgumentParser(description='蜂巢投保模拟程序')
-    parser.add_argument('--sim_count', '-C', type=int, default=1, help='模拟次数')
+    parser.add_argument('--sim_count', '-C', type=int, default=1, help='模拟总次数')
     parser.add_argument('--comb_num', '-N', type=int, default=default_honeycomb_size_in_hive, help='模拟的蜂巢小组总数')
     parser.add_argument('--bee_num', '-n', type=int, default=default_bee_size_in_honeycomb, help='模拟的每个小组总人数')
-    parser.add_argument('--days', '-d', type=int, default=N_Days, help='模拟的总天数')
-    parser.add_argument('--pool_ratio', '-r', type=float, default=defalut_small_pool_ratio, help='小池比例')
-    parser.add_argument('--output_fig', '-o', type=str, default='beehive-simulation.png', help='可视化分析图表文件名')
+    parser.add_argument('--days', '-d', type=int, default=N_Days, help='模拟总天数')
+    parser.add_argument('--pool_ratio', '-r', type=float, default=defalut_small_pool_ratio, help='小池留存比例')
+    parser.add_argument('--output_fig', '-o', type=str, default='beehive-simulation.png', help='分析图表文件名')
 
     args = parser.parse_args()
 
@@ -240,7 +243,8 @@ if __name__ == "__main__":
     output_fig = args.output_fig
 
     output_config(honeycomb_size, bee_size, sim_count, days, pool_ratio, output_fig)
+    stats = Stats(honeycomb_size, bee_size, days, pool_ratio, output_fig)
 
     for sim_time in xrange(sim_count):
-        simulate(honeycomb_size, bee_size, days, pool_ratio, output_fig)
+        stats.simulate()
 
