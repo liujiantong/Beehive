@@ -157,11 +157,24 @@ class Stats:
 def output_config(honeycomb_size, bee_size, sim_count, days, ratio, output_fig):
     line_str = "====================================================================="
     config_str = "%s\n" \
-                 "蜂巢小组总数:\t\t%s\n每个小组总人数:\t\t%s\n" \
-                 "模拟次数:\t\t%d\n模拟天数:\t\t%s\n小池比例:\t\t%s\n" \
-                 "输出图像文件:\t\t%s\n" \
+                 "  蜂巢小组总数:\t\t%d\n" \
+                 "  每个小组总人数:\t%d\n" \
+                 "  模拟次数:\t\t%d\n" \
+                 "  模拟天数:\t\t%d\n" \
+                 "  小池比例:\t\t%s\n" \
+                 "  输出图像文件:\t\t%s\n" \
                  "%s\n" \
-                 % (line_str, honeycomb_size, bee_size, sim_count, days, ratio, output_fig, line_str)
+                 "  赔付频率泊松过程:\tlambda:%d\n" \
+                 "  投保金额高斯分布:\tmu:%d, sigma:%d\n" \
+                 "  赔付金额高斯分布:\tmu:%d, sigma:%d\n" \
+                 "%s\n" \
+                 % (line_str,
+                    honeycomb_size, bee_size, sim_count, days, ratio, output_fig,
+                    line_str,
+                    claim_freq_lambda,
+                    premium_mu, premium_sigma,
+                    charge_mu, charge_sigma,
+                    line_str)
     logging.info(config_str)
 
 
@@ -183,16 +196,21 @@ def simulate(honeycomb_size, bee_size, days, ratio, output_fig):
             # logging.debug("bee:%d", the_bee_id)
 
     # logging.debug("Beehive:%s", the_hive)
+
+    day_cntr = 0
+    evt_sum = 0
     for evt_num in Stats.generate_claim_event(days):
+        day_cntr += 1
         try:
             charges = Stats.generate_charge(evt_num)
             for i in xrange(evt_num):
+                evt_sum += 1
                 bee = random.choice(the_hive.bees())
                 charge = int(charges[i])
                 logging.debug("%s charge %d", bee, charge)
                 bee.charge(charge)
         except BankruptException as e:
-            logging.info("共赔付第%d次, 破产啦", evt_num)
+            logging.info("第%d天, 共赔付第%d次, 破产啦 !!!", day_cntr, evt_sum)
             logging.warn(e)
             break
 
