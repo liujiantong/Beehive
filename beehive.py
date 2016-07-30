@@ -11,9 +11,8 @@ from itertools import chain
 
 import numpy as np
 from scipy import stats
-import matplotlib.pyplot as plt
 
-
+default_fig_name = 'beehive-simulation.png'
 defalut_small_pool_ratio = 0.25
 
 N_Days = 365
@@ -221,6 +220,24 @@ def output_config(honeycomb_size, bee_size, sim_count, days, ratio, output_fig):
     logging.info(config_str)
 
 
+def output_figure(beehive, fig=default_fig_name):
+    import matplotlib.pyplot as plt
+    from pylab import mpl
+
+    mpl.rcParams['font.sans-serif'] = ['AppleGothic']
+    mpl.rcParams['axes.unicode_minus'] = False
+
+    x = [comb.balance() for comb in beehive.all_honeycombs]
+    ax = plt.gca()
+    ax.hist(x, bins=30, alpha=0.2, color='g')
+
+    ax.set_xlabel(u'小组余额')
+    ax.set_ylabel(u'小组数量')
+    ax.set_title(u'各小组余额分布')
+    plt.savefig(fig)
+    # plt.show()
+
+
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logging.info("Simulating Beehive...\n")
@@ -231,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument('--bee_num', '-n', type=int, default=default_bee_size_in_honeycomb, help='模拟的每个小组总人数')
     parser.add_argument('--days', '-d', type=int, default=N_Days, help='模拟总天数')
     parser.add_argument('--pool_ratio', '-r', type=float, default=defalut_small_pool_ratio, help='小池留存比例')
-    parser.add_argument('--output_fig', '-o', type=str, default='beehive-simulation.png', help='分析图表文件名')
+    parser.add_argument('--output_fig', '-o', type=str, default=default_fig_name, help='分析图表文件名')
 
     args = parser.parse_args()
 
@@ -247,4 +264,5 @@ if __name__ == "__main__":
 
     for sim_time in xrange(sim_count):
         stats.simulate()
+        output_figure(stats.the_hive)
 
