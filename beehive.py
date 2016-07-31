@@ -32,10 +32,10 @@ class Beehive:
         :param fee: 需要赔付的金额
         :return:
         """
-        sum = self.pool_balance()
+        pool_sum = self.pool_balance()
         sum1 = 0
         for bee in self.bees_iter():
-            fee_bee = fee * (bee.pool_balance / sum)
+            fee_bee = fee * (bee.pool_balance / pool_sum)
             max_fee = self.calc_max_premium(bee.pool_balance)
             fee_sub = min(fee_bee, max_fee)
             bee.pool_balance -= fee_sub
@@ -60,7 +60,7 @@ class Beehive:
         remaining = self.reserve_fund - fee
         if remaining <= 0:
             raise BankruptException
-        self.reserve_fund -= remaining
+        self.reserve_fund = remaining
 
     def __str__(self):
         str_val = "Beehive simulation | balance:%d\n\n" % self.pool_balance()
