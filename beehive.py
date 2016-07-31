@@ -10,6 +10,7 @@ import numpy as np
 from scipy import stats
 
 import conf
+import pool_remain
 
 
 class BankruptException(Exception):
@@ -91,7 +92,7 @@ class Honeycomb:
 
 class Bee:
 
-    def __init__(self, bee_id, premium, comb, pool_ratio=conf.small_pool_ratio):
+    def __init__(self, bee_id, premium, comb, pool_ratio):
         self.id = bee_id
         self.honeycomb = comb
         self.premium = premium
@@ -252,12 +253,12 @@ if __name__ == "__main__":
                   conf.bee_size_in_honeycomb,
                   conf.simulation_count,
                   conf.N_Days,
-                  conf.small_pool_ratio)
+                  pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb))
 
     simulation = Simulation(conf.honeycomb_size_in_hive,
                             conf.bee_size_in_honeycomb,
                             conf.N_Days,
-                            conf.small_pool_ratio,
+                            pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
                             calc_max_premium_ratio)
 
     for sim_time in xrange(conf.simulation_count):

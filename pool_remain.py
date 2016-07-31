@@ -1,3 +1,5 @@
+# encoding: utf8
+
 pool_ratio_def = [
     (0, 0.25), (1, 0.25), (2, 0.25), (3, 0.25), (4, 0.25), (5, 0.25), (6, 0.25), (7, 0.25), (8, 0.25), (9, 0.25),
     (10, 0.25), (11, 0.25), (12, 0.25), (13, 0.25), (14, 0.25), (15, 0.25), (16, 0.25), (17, 0.25), (18, 0.25), (19, 0.25),
@@ -17,6 +19,6 @@ for k, v in pool_ratio_def:
     pool_ratio_dict[k] = v
 
 
-def get_pool_ratio(pool_size):
+def small_pool_ratio(pool_size):
     return pool_ratio_dict.get(pool_size, 0.25)
 

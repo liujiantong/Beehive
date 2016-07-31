@@ -4,7 +4,7 @@
 default_fig_name = 'beehive-simulation.png'
 
 # 小池留存比例
-small_pool_ratio = 0.25
+# small_pool_ratio = 0.25
 
 # 模拟总次数
 simulation_count = 1
