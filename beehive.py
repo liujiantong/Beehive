@@ -136,7 +136,7 @@ class Bee:
 
 class Simulation:
 
-    def __init__(self, comb_size, bee_size, days, ratio, calc_max_premium, output_fig='beehive-simulation.png'):
+    def __init__(self, comb_size, bee_size, days, ratio, calc_max_premium, output_fig=None):
         self.honeycomb_size = comb_size
         self.bee_size = bee_size
         self.days = days
@@ -195,6 +195,9 @@ class Simulation:
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
 
+        if self.output_fig is not None:
+            output_figure(self.the_hive, self.output_fig)
+
 
 def calc_max_premium_constant(pool_balance):
     return conf.max_premium_constant
@@ -226,7 +229,6 @@ def output_config(honeycomb_size, bee_size, days, ratio):
     logging.info(config_str)
 
 
-@staticmethod
 def output_figure(beehive, fig=conf.default_fig_name):
     import matplotlib.pyplot as plt
     from pylab import mpl
@@ -253,18 +255,21 @@ if __name__ == "__main__":
     parser.add_argument('--comb_size', '-N', default=conf.honeycomb_size_in_hive, type=int, help='模拟的蜂巢小组总数')
     parser.add_argument('--bee_size', '-n', default=conf.bee_size_in_honeycomb, type=int, help='模拟的每个小组总人数')
     parser.add_argument('--days', '-d', default=conf.N_Days, type=int, help='模拟总天数')
+    parser.add_argument('--output_fig', '-o', default=None, type=str, help='分析图表文件名')
+
     args = parser.parse_args()
 
     comb_size = args.comb_size
     bee_size = args.bee_size
     days = args.days
+    output_fig = args.output_fig
 
     output_config(comb_size, bee_size, days,
                   pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb))
 
     simulation = Simulation(comb_size, bee_size, days,
                             pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
-                            calc_max_premium_ratio)
+                            calc_max_premium_ratio, output_fig)
 
     # for sim_time in xrange(conf.simulation_count):
     simulation.simulate()
