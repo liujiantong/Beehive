@@ -63,7 +63,7 @@ class Beehive:
         self.reserve_fund = remaining
 
     def __str__(self):
-        str_val = "Beehive simulation | balance:%d\n\n" % self.pool_balance()
+        str_val = "Beehive simulation | 准备金余额:%d | 大池余额:%d\n" % (self.reserve_fund, self.pool_balance())
         for comb in self.all_honeycombs:
             str_val += '%s\n' % comb
         return str_val
@@ -78,17 +78,19 @@ class Honeycomb:
         self.hive.all_honeycombs.append(self)
 
     def join_bee__(self, bee):
-        # logging.debug("bee:%s", bee)
         self.bees.append(bee)
 
     def balance(self):
         return reduce((lambda x, y: x + y), [b.balance for b in self.bees])
 
+    def pool_balance(self):
+        return reduce((lambda x, y: x + y), [b.pool_balance for b in self.bees])
+
     def __str__(self):
-        return "[Honeycomb:%d | balance:%d]" % (self.id, self.balance())
+        return "[小组编号:%d | 小池总余额:%d | 大池总余额:%d]" % (self.id, self.balance(), self.pool_balance())
 
     def detail(self):
-        return "[Honeycomb:%d\n%s]" % (self.id, str([str(bee) for bee in self.bees]))
+        return "[小组编号:%d\n%s]" % (self.id, str([str(bee) for bee in self.bees]))
 
 
 class Bee:
@@ -106,13 +108,12 @@ class Bee:
         self.honeycomb.join_bee__(self)
 
     def charge(self, fee):
-        remaining = self.balance - fee
-        if remaining >= 0:
-            self.balance = remaining
+        if self.balance > fee:
+            self.balance -= fee
             return 0
         else:
             self.balance = 0
-            remain_tmp = -1 * remaining
+            remain_tmp = fee - self.balance
 
             if self.pool_balance >= remain_tmp:
                 self.pool_balance -= remain_tmp
@@ -130,7 +131,7 @@ class Bee:
         self.pool_balance = self.premium - small_pool
 
     def __str__(self):
-        return '[Bee:%d | comb_id:%d | balance:%d | pool_balance:%d]' % \
+        return '[参与人编号:%d | 参与小组编号:%d | 个人小池余额:%d | 个人大池余额:%d]' % \
                (self.id, self.honeycomb.id, self.balance, self.pool_balance)
 
 
@@ -195,7 +196,7 @@ class Simulation:
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
 
-        if self.output_fig is not None:
+        if self.output_fig:
             output_figure(self.the_hive, self.output_fig)
 
 
@@ -229,21 +230,31 @@ def output_config(honeycomb_size, bee_size, days, ratio):
     logging.info(config_str)
 
 
-def output_figure(beehive, fig=conf.default_fig_name):
+def output_figure(beehive, output_fig=conf.default_fig_name):
     import matplotlib.pyplot as plt
     from pylab import mpl
 
     mpl.rcParams['font.sans-serif'] = ['AppleGothic']
     mpl.rcParams['axes.unicode_minus'] = False
 
-    x = [comb.balance() for comb in beehive.all_honeycombs]
-    ax = plt.gca()
-    ax.hist(x, bins=30, alpha=0.2, color='g')
+    x0 = [comb.balance() for comb in beehive.all_honeycombs]
+    x1 = [comb.pool_balance() for comb in beehive.all_honeycombs]
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    ax0, ax1 = axes.flat
 
-    ax.set_xlabel(u'小组余额')
-    ax.set_ylabel(u'小组数量')
-    ax.set_title(u'各小组余额分布')
-    plt.savefig(fig)
+    ax0.hist(x0, bins=30, alpha=0.2, color='b')
+    ax0.set_xlabel(u'小组小池余额 (单位:元)')
+    ax0.set_ylabel(u'小组数量')
+    ax0.set_title(u'小组小池余额分布')
+
+    ax1.hist(x1, bins=30, alpha=0.2, color='g')
+    ax1.set_xlabel(u'小组大池余额 (单位:元)')
+    ax1.set_ylabel(u'小组数量')
+    ax1.set_title(u'小组大池余额分布')
+
+    plt.subplots_adjust(hspace=0.5)
+
+    plt.savefig(output_fig)
     plt.show()
 
 
