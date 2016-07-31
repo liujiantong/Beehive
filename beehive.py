@@ -4,6 +4,7 @@
 import random
 import math
 import logging
+import argparse
 
 from functools import reduce
 import numpy as np
@@ -203,12 +204,11 @@ def calc_max_premium_ratio(pool_balance):
     return pool_balance * conf.max_premium_ratio
 
 
-def output_config(honeycomb_size, bee_size, sim_count, days, ratio):
+def output_config(honeycomb_size, bee_size, days, ratio):
     line_str = "====================================================================="
     config_str = "%s\n" \
                  "  蜂巢小组总数:\t\t%d\n" \
                  "  每个小组总人数:\t%d\n" \
-                 "  模拟总次数:\t\t%d\n" \
                  "  模拟总天数:\t\t%d\n" \
                  "  小池留存比例:\t\t%s\n" \
                  "%s\n" \
@@ -217,7 +217,7 @@ def output_config(honeycomb_size, bee_size, sim_count, days, ratio):
                  "  赔付金额高斯分布:\tmu:%d, sigma:%d\n" \
                  "%s\n" \
                  % (line_str,
-                    honeycomb_size, bee_size, sim_count, days, ratio,
+                    honeycomb_size, bee_size, days, ratio,
                     line_str,
                     conf.claim_freq_lambda,
                     conf.premium_mu, conf.premium_sigma,
@@ -249,18 +249,23 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logging.info("蜂巢投保模拟程序: Simulating Beehive...\n")
 
-    output_config(conf.honeycomb_size_in_hive,
-                  conf.bee_size_in_honeycomb,
-                  conf.simulation_count,
-                  conf.N_Days,
+    parser = argparse.ArgumentParser(description='蜂巢投保模拟程序')
+    parser.add_argument('--comb_size', '-N', default=conf.honeycomb_size_in_hive, type=int, help='模拟的蜂巢小组总数')
+    parser.add_argument('--bee_size', '-n', default=conf.bee_size_in_honeycomb, type=int, help='模拟的每个小组总人数')
+    parser.add_argument('--days', '-d', default=conf.N_Days, type=int, help='模拟总天数')
+    args = parser.parse_args()
+
+    comb_size = args.comb_size
+    bee_size = args.bee_size
+    days = args.days
+
+    output_config(comb_size, bee_size, days,
                   pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb))
 
-    simulation = Simulation(conf.honeycomb_size_in_hive,
-                            conf.bee_size_in_honeycomb,
-                            conf.N_Days,
+    simulation = Simulation(comb_size, bee_size, days,
                             pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
                             calc_max_premium_ratio)
 
-    for sim_time in xrange(conf.simulation_count):
-        simulation.simulate()
+    # for sim_time in xrange(conf.simulation_count):
+    simulation.simulate()
 

@@ -7,7 +7,7 @@ default_fig_name = 'beehive-simulation.png'
 # small_pool_ratio = 0.25
 
 # 模拟总次数
-simulation_count = 1
+# simulation_count = 1
 
 # 模拟总天数
 N_Days = 365
@@ -15,7 +15,7 @@ N_Days = 365
 claim_freq_lambda = 10
 
 # 模拟的蜂巢小组总数
-honeycomb_size_in_hive = 300
+honeycomb_size_in_hive = 1000
 
 # 模拟的每个小组总人数
 bee_size_in_honeycomb = 5
