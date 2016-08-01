@@ -31,7 +31,7 @@ charge_sigma = 200
 # 索赔金额Gamma分布参数
 charge_gamma_shape = 3
 charge_gamma_scale = 0.5
-charge_gamma_value = 1000
+charge_gamma_value = 500
 
 # 最高赔付金额
 max_premium_constant = 100

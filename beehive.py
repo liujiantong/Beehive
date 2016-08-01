@@ -34,16 +34,20 @@ class Beehive:
         """
         pool_sum = self.pool_balance()
         sum1 = 0
-        for bee in self.bees_iter():
-            fee_bee = fee * (bee.pool_balance / pool_sum)
-            max_fee = self.calc_max_premium(bee.pool_balance)
-            fee_sub = min(fee_bee, max_fee)
-            bee.pool_balance -= fee_sub
-            sum1 += fee_sub
 
-        if sum1 < fee:
-            sub_fee = fee - sum1
-            self.__charge_reserve_fund(sub_fee)
+        if pool_sum > 0:
+            for bee in self.bees_iter():
+                fee_bee = fee * (bee.pool_balance / pool_sum)
+                max_fee = self.calc_max_premium(bee.pool_balance)
+                fee_sub = min(fee_bee, max_fee)
+                bee.pool_balance -= fee_sub
+                sum1 += fee_sub
+
+            if sum1 < fee:
+                sub_fee = fee - sum1
+                self.__charge_reserve_fund(sub_fee)
+        else:
+            self.__charge_reserve_fund(fee)
 
     def bees_iter(self):
         for comb in self.all_honeycombs:
@@ -54,7 +58,7 @@ class Beehive:
         return [bee for comb in self.all_honeycombs for bee in comb.bees]
 
     def pool_balance(self):
-        return reduce((lambda x, y: x + y), [b.pool_balance for b in self.bees_iter()])
+        return reduce((lambda x, y: x + y), [int(b.pool_balance) for b in self.bees_iter()])
 
     def __charge_reserve_fund(self, fee):
         remaining = self.reserve_fund - fee
@@ -63,7 +67,7 @@ class Beehive:
         self.reserve_fund = remaining
 
     def __str__(self):
-        str_val = "Beehive simulation | 准备金余额:%d | 大池余额:%d\n" % (self.reserve_fund, self.pool_balance())
+        str_val = "Beehive 模拟结果: 准备金余额:%d | 大池余额:%d\n" % (self.reserve_fund, self.pool_balance())
         for comb in self.all_honeycombs:
             str_val += '%s\n' % comb
         return str_val
@@ -81,10 +85,10 @@ class Honeycomb:
         self.bees.append(bee)
 
     def balance(self):
-        return reduce((lambda x, y: x + y), [b.balance for b in self.bees])
+        return reduce((lambda x, y: x + y), [int(b.balance) for b in self.bees])
 
     def pool_balance(self):
-        return reduce((lambda x, y: x + y), [b.pool_balance for b in self.bees])
+        return reduce((lambda x, y: x + y), [int(b.pool_balance) for b in self.bees])
 
     def __str__(self):
         return "[小组编号:%d | 小池总余额:%d | 大池总余额:%d]" % (self.id, self.balance(), self.pool_balance())
@@ -163,8 +167,7 @@ class Simulation:
 
     @staticmethod
     def generate_charge_gamma(size):
-        return np.random.normal(conf.charge_gamma_shape, conf.charge_gamma_scale, size)
-
+        return conf.charge_gamma_value * np.random.gamma(conf.charge_gamma_shape, conf.charge_gamma_scale, size)
 
     def simulate(self):
         premiums = Simulation.generate_premium(self.honeycomb_size * self.bee_size)
@@ -255,7 +258,7 @@ def output_figure(beehive, output_fig=conf.default_fig_name):
     ax0.set_ylabel(u'小组数量')
     ax0.set_title(u'小组小池余额分布')
 
-    ax1.hist(x1, bins=30, alpha=0.2, color='g')
+    ax1.hist(x1, bins=20, alpha=0.2, color='g')
     ax1.set_xlabel(u'小组大池余额 (单位:元)')
     ax1.set_ylabel(u'小组数量')
     ax1.set_title(u'小组大池余额分布')
