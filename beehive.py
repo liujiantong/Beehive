@@ -90,8 +90,12 @@ class Honeycomb:
     def pool_balance(self):
         return reduce((lambda x, y: x + y), [int(b.pool_balance) for b in self.bees])
 
+    def claim_count(self):
+        return reduce((lambda x, y: x + y), [len(b.claims) for b in self.bees])
+
     def __str__(self):
-        return "[小组编号:%d | 小池总余额:%d | 大池总余额:%d]" % (self.id, self.balance(), self.pool_balance())
+        return "[小组编号:%d | 小池总余额:%d | 大池总余额:%d | 出险次数:%d]" % \
+               (self.id, self.balance(), self.pool_balance(), self.claim_count())
 
     def detail(self):
         return "[小组编号:%d\n%s]" % (self.id, str([str(bee) for bee in self.bees]))
@@ -105,6 +109,7 @@ class Bee:
         self.premium = premium
         self.balance = 0
         self.small_pool_ratio = pool_ratio
+        self.claims = []
 
         small_pool = int(math.floor(self.premium * self.small_pool_ratio))
         self.balance += small_pool
@@ -112,6 +117,7 @@ class Bee:
         self.honeycomb.join_bee__(self)
 
     def charge(self, fee):
+        self.claims.append(fee)
         if self.balance > fee:
             self.balance -= fee
             return 0
@@ -135,8 +141,8 @@ class Bee:
         self.pool_balance = self.premium - small_pool
 
     def __str__(self):
-        return '[参与人编号:%d | 参与小组编号:%d | 个人小池余额:%d | 个人大池余额:%d]' % \
-               (self.id, self.honeycomb.id, self.balance, self.pool_balance)
+        return '[参与人编号:%d | 参与小组编号:%d | 个人小池余额:%d | 个人大池余额:%d | 出险次数:%d]' % \
+               (self.id, self.honeycomb.id, self.balance, self.pool_balance, len(self.claims))
 
 
 class Simulation:
