@@ -20,7 +20,7 @@ bee_size_in_honeycomb = 5
 
 # 投保分布参数
 premium_mu = 4000
-premium_sigma = 2000
+premium_sigma = 1000
 
 # 索赔金额分布参数
 charge_mu = 500
