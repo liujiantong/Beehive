@@ -3,17 +3,12 @@
 # 分析图表文件名
 default_fig_name = 'beehive-simulation.png'
 
-# 小池留存比例
-# small_pool_ratio = 0.25
-
-# 模拟总次数
-# simulation_count = 1
-
 # 模拟总月份数
 N_Months = 12
 
 # 每月明细结果CSV
 bees_detail_file = 'bees_detail_m%02d.csv'
+hive_stats_file = 'hive_stats.csv'
 
 claim_freq_lambda = 10
 

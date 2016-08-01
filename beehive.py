@@ -24,11 +24,12 @@ class BankruptException(Exception):
 
 class Beehive:
 
-    def __init__(self, hive_id, reserve_fund, calc_max_premium):
+    def __init__(self, hive_id, reserve_fund, calc_max_premium, cnf):
         self.id = hive_id
         self.all_honeycombs = []
         self.reserve_fund = reserve_fund
         self.calc_max_premium = calc_max_premium
+        self.cnf = cnf
 
     def charge(self, bee0, fee):
         """
@@ -64,6 +65,19 @@ class Beehive:
     def pool_balance(self):
         return reduce((lambda x, y: x + y), [int(b.pool_balance) for b in self.bees_iter()])
 
+    def balance(self):
+        return reduce((lambda x, y: x + y), [int(b.balance) for b in self.bees_iter()])
+
+    def claim_stats(self):
+        count0 = 0
+        sum0 = 0
+        for bee in self.bees_iter():
+            count0 += len(bee.claim_history)
+            if len(bee.claim_history) > 0:
+                sum0 += reduce((lambda x, y: x + y), [int(claim) for claim in bee.claim_history])
+
+        return count0, sum0
+
     def __charge_reserve_fund(self, fee):
         remaining = self.reserve_fund - fee
         if remaining <= 0:
@@ -79,10 +93,23 @@ class Beehive:
                         len(bee.claim_history), ','.join([str(claim) for claim in bee.claim_history]))
                 f.write(line)
 
+    def write_summary_csv(self, file_name):
+        claim_count, claim_sum = self.claim_stats()
+        with open(file_name, 'w') as f:
+            f.write('#小组个数,每小组人数,小池比例,大池单次扣款限额,准备金余额,小池余额,大池余额,总出险次数,总出险金额\n')
+            line = '%d,%d,%.02f,%.02f,%d,%d,%d,%d,%d\n' % \
+                   (self.cnf.honeycomb_size_in_hive, self.cnf.bee_size_in_honeycomb,
+                    pool_remain.small_pool_ratio(self.cnf.bee_size_in_honeycomb), self.cnf.max_premium_ratio,
+                    self.reserve_fund, self.balance(), self.pool_balance(), claim_count, claim_sum)
+            f.write(line)
+
     def __str__(self):
-        str_val = "Beehive 模拟结果: 准备金余额:%d | 大池余额:%d\n" % (self.reserve_fund, self.pool_balance())
-        for comb in self.all_honeycombs:
-            str_val += '%s\n' % comb
+        claim_count, claim_sum = self.claim_stats()
+        str_val = "Beehive 模拟结果: \n" \
+                  "\t准备金余额:%d | 大池余额:%d | 小池余额:%d | 总出险次数:%d | 总出险金额:%d\n" % \
+                  (self.reserve_fund, self.pool_balance(), self.balance(), claim_count, claim_sum)
+        # for comb in self.all_honeycombs:
+        #     str_val += '%s\n' % comb
         return str_val
 
 
@@ -160,16 +187,17 @@ class Bee:
 
 class Simulation:
 
-    def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium, output_fig=None):
+    def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium, cnf, output_fig=None):
         self.honeycomb_size = comb_size
         self.bee_size = bee_size
         self.months = months
         self.pool_ratio = ratio
         self.output_fig = output_fig
+        self.cnf = cnf
 
         self.the_comb_id = 0
         self.the_bee_id = 0
-        self.the_hive = Beehive(0, conf.global_reserve_fund, calc_max_premium)
+        self.the_hive = Beehive(0, conf.global_reserve_fund, calc_max_premium, cnf)
         self.calc_max_premium = calc_max_premium
 
     @staticmethod
@@ -225,6 +253,8 @@ class Simulation:
                     break
 
             self.the_hive.write_detail_csv(data_dir + '/' + conf.bees_detail_file % (m0nth + 1))
+
+        self.the_hive.write_summary_csv(data_dir + '/' + conf.hive_stats_file)
 
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
@@ -318,7 +348,7 @@ if __name__ == "__main__":
 
     simulation = Simulation(comb_size, bee_size, months,
                             pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
-                            calc_max_premium_ratio, output_fig)
+                            calc_max_premium_ratio, conf, output_fig)
 
     # for sim_time in xrange(conf.simulation_count):
     simulation.simulate()
