@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf8
 
+import os
 import random
 import math
 import logging
@@ -12,6 +13,9 @@ from scipy import stats
 
 import conf
 import pool_remain
+
+
+data_dir = 'data'
 
 
 class BankruptException(Exception):
@@ -66,6 +70,15 @@ class Beehive:
             raise BankruptException
         self.reserve_fund = remaining
 
+    def write_detail_csv(self, file_name):
+        with open(file_name, 'w') as f:
+            f.write('#会员编号,小组编号,小池余额,大池余额,出险次数,出险金额n...\n')
+            for bee in self.bees_iter():
+                line = "%d,%d,%d,%d,%d,%s\n" % \
+                       (bee.id, bee.honeycomb.id, bee.balance, bee.pool_balance,
+                        len(bee.claim_history), ','.join([str(claim) for claim in bee.claim_history]))
+                f.write(line)
+
     def __str__(self):
         str_val = "Beehive 模拟结果: 准备金余额:%d | 大池余额:%d\n" % (self.reserve_fund, self.pool_balance())
         for comb in self.all_honeycombs:
@@ -91,7 +104,7 @@ class Honeycomb:
         return reduce((lambda x, y: x + y), [int(b.pool_balance) for b in self.bees])
 
     def claim_count(self):
-        return reduce((lambda x, y: x + y), [len(b.claims) for b in self.bees])
+        return reduce((lambda x, y: x + y), [len(b.claim_history) for b in self.bees])
 
     def __str__(self):
         return "[小组编号:%d | 小池总余额:%d | 大池总余额:%d | 出险次数:%d]" % \
@@ -109,7 +122,7 @@ class Bee:
         self.premium = premium
         self.balance = 0
         self.small_pool_ratio = pool_ratio
-        self.claims = []
+        self.claim_history = []
 
         small_pool = int(math.floor(self.premium * self.small_pool_ratio))
         self.balance += small_pool
@@ -117,7 +130,7 @@ class Bee:
         self.honeycomb.join_bee__(self)
 
     def charge(self, fee):
-        self.claims.append(fee)
+        self.claim_history.append(fee)
         if self.balance > fee:
             self.balance -= fee
             return 0
@@ -142,15 +155,15 @@ class Bee:
 
     def __str__(self):
         return '[参与人编号:%d | 参与小组编号:%d | 个人小池余额:%d | 个人大池余额:%d | 出险次数:%d]' % \
-               (self.id, self.honeycomb.id, self.balance, self.pool_balance, len(self.claims))
+               (self.id, self.honeycomb.id, self.balance, self.pool_balance, len(self.claim_history))
 
 
 class Simulation:
 
-    def __init__(self, comb_size, bee_size, days, ratio, calc_max_premium, output_fig=None):
+    def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium, output_fig=None):
         self.honeycomb_size = comb_size
         self.bee_size = bee_size
-        self.days = days
+        self.months = months
         self.pool_ratio = ratio
         self.output_fig = output_fig
 
@@ -192,21 +205,26 @@ class Simulation:
 
         day_cntr = 0
         evt_sum = 0
-        for evt_num in Simulation.generate_claim_event(self.days):
-            day_cntr += 1
-            try:
-                # charges = Simulation.generate_charge(evt_num)
-                charges = Simulation.generate_charge_gamma(evt_num)
-                for i in xrange(evt_num):
-                    evt_sum += 1
-                    bee = random.choice(self.the_hive.bees())
-                    charge = int(charges[i])
-                    logging.debug("%s charge %d", bee, charge)
-                    bee.charge(charge)
-            except BankruptException as e:
-                logging.info("第%d天, 共赔付第%d次, 破产啦 !!!", day_cntr, evt_sum)
-                logging.warn(e)
-                break
+        days_in_month = 30
+        # for evt_num in Simulation.generate_claim_event(days):
+        for m0nth in xrange(self.months):
+            for evt_num in Simulation.generate_claim_event(days_in_month):
+                day_cntr += 1
+                try:
+                    # charges = Simulation.generate_charge(evt_num)
+                    charges = Simulation.generate_charge_gamma(evt_num)
+                    for i in xrange(evt_num):
+                        evt_sum += 1
+                        bee = random.choice(self.the_hive.bees())
+                        charge = int(charges[i])
+                        logging.debug("%s charge %d", bee, charge)
+                        bee.charge(charge)
+                except BankruptException as e:
+                    logging.info("第%d天, 共赔付第%d次, 破产啦 !!!", day_cntr, evt_sum)
+                    logging.warn(e)
+                    break
+
+            self.the_hive.write_detail_csv(data_dir + '/' + conf.bees_detail_file % (m0nth + 1))
 
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
@@ -223,12 +241,12 @@ def calc_max_premium_ratio(pool_balance):
     return pool_balance * conf.max_premium_ratio
 
 
-def output_config(honeycomb_size, bee_size, days, ratio):
+def output_config(honeycomb_size, bee_size, months, ratio):
     line_str = "====================================================================="
     config_str = "%s\n" \
                  "  蜂巢小组总数:\t\t%d\n" \
                  "  每个小组总人数:\t%d\n" \
-                 "  模拟总天数:\t\t%d\n" \
+                 "  模拟总月份数:\t\t%d\n" \
                  "  小池留存比例:\t\t%s\n" \
                  "%s\n" \
                  "  赔付频率泊松过程:\tlambda:%d\n" \
@@ -237,7 +255,7 @@ def output_config(honeycomb_size, bee_size, days, ratio):
                  "  赔付金额Gamma分布:\tm:%d, lambda:%d\n" \
                  "%s\n" \
                  % (line_str,
-                    honeycomb_size, bee_size, days, ratio,
+                    honeycomb_size, bee_size, months, ratio,
                     line_str,
                     conf.claim_freq_lambda,
                     conf.premium_mu, conf.premium_sigma,
@@ -282,20 +300,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='蜂巢投保模拟程序')
     parser.add_argument('--comb_size', '-N', default=conf.honeycomb_size_in_hive, type=int, help='模拟的蜂巢小组总数')
     parser.add_argument('--bee_size', '-n', default=conf.bee_size_in_honeycomb, type=int, help='模拟的每个小组总人数')
-    parser.add_argument('--days', '-d', default=conf.N_Days, type=int, help='模拟总天数')
+    parser.add_argument('--months', '-m', default=conf.N_Months, type=int, help='模拟总天数')
     parser.add_argument('--output_fig', '-o', default=None, type=str, help='分析图表文件名')
 
     args = parser.parse_args()
 
     comb_size = args.comb_size
     bee_size = args.bee_size
-    days = args.days
+    months = args.months
     output_fig = args.output_fig
 
-    output_config(comb_size, bee_size, days,
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    output_config(comb_size, bee_size, months,
                   pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb))
 
-    simulation = Simulation(comb_size, bee_size, days,
+    simulation = Simulation(comb_size, bee_size, months,
                             pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
                             calc_max_premium_ratio, output_fig)
 

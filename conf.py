@@ -9,8 +9,11 @@ default_fig_name = 'beehive-simulation.png'
 # 模拟总次数
 # simulation_count = 1
 
-# 模拟总天数
-N_Days = 365
+# 模拟总月份数
+N_Months = 12
+
+# 每月明细结果CSV
+bees_detail_file = 'bees_detail_m%02d.csv'
 
 claim_freq_lambda = 10
 
