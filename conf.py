@@ -28,6 +28,11 @@ premium_sigma = 2000
 charge_mu = 500
 charge_sigma = 200
 
+# 索赔金额Gamma分布参数
+charge_gamma_shape = 3
+charge_gamma_scale = 0.5
+charge_gamma_value = 1000
+
 # 最高赔付金额
 max_premium_constant = 100
 max_premium_ratio = 0.05

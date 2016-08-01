@@ -161,6 +161,11 @@ class Simulation:
     def generate_claim_event(days):
         return np.random.poisson(conf.claim_freq_lambda, days)
 
+    @staticmethod
+    def generate_charge_gamma(size):
+        return np.random.normal(conf.charge_gamma_shape, conf.charge_gamma_scale, size)
+
+
     def simulate(self):
         premiums = Simulation.generate_premium(self.honeycomb_size * self.bee_size)
         for i in xrange(self.honeycomb_size):
@@ -181,7 +186,8 @@ class Simulation:
         for evt_num in Simulation.generate_claim_event(self.days):
             day_cntr += 1
             try:
-                charges = Simulation.generate_charge(evt_num)
+                # charges = Simulation.generate_charge(evt_num)
+                charges = Simulation.generate_charge_gamma(evt_num)
                 for i in xrange(evt_num):
                     evt_sum += 1
                     bee = random.choice(self.the_hive.bees())
@@ -219,6 +225,7 @@ def output_config(honeycomb_size, bee_size, days, ratio):
                  "  赔付频率泊松过程:\tlambda:%d\n" \
                  "  投保金额高斯分布:\tmu:%d, sigma:%d\n" \
                  "  赔付金额高斯分布:\tmu:%d, sigma:%d\n" \
+                 "  赔付金额Gamma分布:\tm:%d, lambda:%d\n" \
                  "%s\n" \
                  % (line_str,
                     honeycomb_size, bee_size, days, ratio,
@@ -226,6 +233,7 @@ def output_config(honeycomb_size, bee_size, days, ratio):
                     conf.claim_freq_lambda,
                     conf.premium_mu, conf.premium_sigma,
                     conf.charge_mu, conf.charge_sigma,
+                    conf.charge_gamma_shape, 1/conf.charge_gamma_scale,
                     line_str)
     logging.info(config_str)
 
