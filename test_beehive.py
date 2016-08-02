@@ -74,6 +74,12 @@ class HiveTestCases(unittest.TestCase):
     def test_beehive(self):
         pass
 
+    def testScenario(self):
+        from scenarios import Scenario, scenarios
+        s = Scenario(**(scenarios[0]))
+        self.assertEqual(12, s.N_Months)
+
 
 if __name__ == '__main__':
     unittest.main()
+
