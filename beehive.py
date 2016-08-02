@@ -85,10 +85,10 @@ class Beehive:
 
     def write_detail_csv(self, file_name):
         with open(file_name, 'w') as f:
-            f.write('#会员编号,小组编号,小池余额,大池余额,出险次数,出险金额n...\n')
+            f.write('#会员编号,小组编号,保费,小池余额,大池余额,出险次数,出险金额n...\n')
             for bee in self.bees_iter():
-                line = "%d,%d,%d,%d,%d,%s\n" % \
-                       (bee.id, bee.honeycomb.id, bee.balance, bee.pool_balance,
+                line = "%d,%d,%d,%d,%d,%d,%s\n" % \
+                       (bee.id, bee.honeycomb.id, bee.premium, bee.balance, bee.pool_balance,
                         len(bee.claim_history), ','.join([str(claim) for claim in bee.claim_history]))
                 f.write(line)
 
