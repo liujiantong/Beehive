@@ -107,8 +107,8 @@ class Beehive:
         str_val = "Beehive 模拟结果: \n" \
                   "\t准备金余额:%d | 大池余额:%d | 小池余额:%d | 总出险次数:%d | 总出险金额:%d\n" % \
                   (self.reserve_fund, self.pool_balance(), self.balance(), claim_count, claim_sum)
-        for comb in self.all_honeycombs:
-            str_val += '%s\n' % comb
+        # for comb in self.all_honeycombs:
+        #     str_val += '%s\n' % comb
         return str_val
 
 
