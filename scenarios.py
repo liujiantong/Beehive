@@ -19,7 +19,7 @@ scenario_config = [
         'global_reserve_fund': 3000000,
 
         # 模拟的蜂巢小组总数
-        'honeycomb_size_in_hive': 300,
+        'honeycomb_size_in_hive': 100,
         # 模拟的每个小组总人数
         'bee_size_in_honeycomb': 5,
 
@@ -35,7 +35,7 @@ scenario_config = [
         'global_reserve_fund': 3000000,
 
         # 模拟的蜂巢小组总数
-        'honeycomb_size_in_hive': 600,
+        'honeycomb_size_in_hive': 500,
         # 模拟的每个小组总人数
         'bee_size_in_honeycomb': 5,
 
