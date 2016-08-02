@@ -10,7 +10,7 @@ Scenario = collections.namedtuple('Scenario', [
 ])
 
 # Scenario 配置
-scenarios = [
+scenario_config = [
     {
         # 模拟总月份数
         'N_Months': 12,
@@ -26,6 +26,6 @@ scenarios = [
         # 最高赔付金额
         'max_premium_constant': 100,
         'max_premium_ratio': 0.05,
-    }
+    },
 ]
 

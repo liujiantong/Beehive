@@ -23,12 +23,13 @@ class BankruptException(Exception):
 
 class Beehive:
 
-    def __init__(self, hive_id, reserve_fund, calc_max_premium, cnf):
+    def __init__(self, hive_id, reserve_fund, calc_max_premium, cnf, scenario):
         self.id = hive_id
         self.all_honeycombs = []
         self.reserve_fund = reserve_fund
         self.calc_max_premium = calc_max_premium
         self.cnf = cnf
+        self.scenario = scenario
 
     def charge(self, bee0, fee):
         """
@@ -97,8 +98,9 @@ class Beehive:
         with open(file_name, 'w') as f:
             f.write('#小组个数,每小组人数,小池比例,大池单次扣款限额,准备金余额,小池余额,大池余额,总出险次数,总出险金额\n')
             line = '%d,%d,%.02f,%.02f,%d,%d,%d,%d,%d\n' % \
-                   (self.cnf.honeycomb_size_in_hive, self.cnf.bee_size_in_honeycomb,
-                    pool_remain.small_pool_ratio(self.cnf.bee_size_in_honeycomb), self.cnf.max_premium_ratio,
+                   (self.scenario.honeycomb_size_in_hive, self.scenario.bee_size_in_honeycomb,
+                    pool_remain.small_pool_ratio(self.scenario.bee_size_in_honeycomb),
+                    self.scenario.max_premium_ratio,
                     self.reserve_fund, self.balance(), self.pool_balance(), claim_count, claim_sum)
             f.write(line)
 
@@ -186,18 +188,21 @@ class Bee:
 
 class Simulation:
 
-    def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium, cnf, output_fig=None):
+    def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium,
+                 global_reserve_fund, cnf, scenario, out_dir, output_fig=None):
         self.honeycomb_size = comb_size
         self.bee_size = bee_size
         self.months = months
         self.pool_ratio = ratio
+        self.calc_max_premium = calc_max_premium
         self.output_fig = output_fig
         self.cnf = cnf
+        self.scenario = scenario
+        self.out_dir = out_dir
 
         self.the_comb_id = 0
         self.the_bee_id = 0
-        self.the_hive = Beehive(0, cnf.global_reserve_fund, calc_max_premium, cnf)
-        self.calc_max_premium = calc_max_premium
+        self.the_hive = Beehive(0, global_reserve_fund, calc_max_premium, cnf, scenario)
 
     @staticmethod
     def generate_premium(cnf, size):
@@ -251,23 +256,24 @@ class Simulation:
                     logging.warn(e)
                     break
 
-            self.the_hive.write_detail_csv(data_dir + '/' + self.cnf.bees_detail_file % (m0nth + 1))
+            self.the_hive.write_detail_csv(self.out_dir + '/' + self.cnf.bees_detail_file % (m0nth + 1))
 
-        self.the_hive.write_summary_csv(data_dir + '/' + self.cnf.hive_stats_file)
+        self.the_hive.write_summary_csv(self.out_dir + '/' + self.cnf.hive_stats_file)
 
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
 
         if self.output_fig:
-            output_figure(self.the_hive, self.output_fig)
+            fig_dir = self.out_dir + '/' + self.output_fig
+            output_figure(self.the_hive, fig_dir)
 
 
 def calc_max_premium_constant(pool_balance):
-    return conf.max_premium_constant
+    return scenario.max_premium_constant
 
 
 def calc_max_premium_ratio(pool_balance):
-    return pool_balance * conf.max_premium_ratio
+    return pool_balance * scenario.max_premium_ratio
 
 
 def output_config(cnf, honeycomb_size, bee_size, months, ratio):
@@ -319,38 +325,51 @@ def output_figure(beehive, output_fig):
     plt.subplots_adjust(hspace=0.5)
 
     plt.savefig(output_fig)
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
     import conf
+    from scenarios import Scenario, scenario_config
 
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logging.info("蜂巢投保模拟程序: Simulating Beehive...\n")
 
     parser = argparse.ArgumentParser(description='蜂巢投保模拟程序')
-    parser.add_argument('--comb_size', '-N', default=conf.honeycomb_size_in_hive, type=int, help='模拟的蜂巢小组总数')
-    parser.add_argument('--bee_size', '-n', default=conf.bee_size_in_honeycomb, type=int, help='模拟的每个小组总人数')
-    parser.add_argument('--months', '-m', default=conf.N_Months, type=int, help='模拟总天数')
-    parser.add_argument('--output_fig', '-o', default=None, type=str, help='分析图表文件名')
+    parser.add_argument('--comb_size', '-N', type=int, help='模拟的蜂巢小组总数')
+    parser.add_argument('--bee_size', '-n', type=int, help='模拟的每个小组总人数')
+    parser.add_argument('--months', '-m', type=int, help='模拟总天数')
+    parser.add_argument('--output_fig', '-o', type=str, help='分析图表文件名')
 
     args = parser.parse_args()
 
-    comb_size = args.comb_size
-    bee_size = args.bee_size
-    months = args.months
     output_fig = args.output_fig
 
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
 
-    output_config(conf, comb_size, bee_size, months,
-                  pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb))
+    scenarios = []
 
-    simulation = Simulation(comb_size, bee_size, months,
-                            pool_remain.small_pool_ratio(conf.bee_size_in_honeycomb),
-                            calc_max_premium_ratio, conf, output_fig)
+    for i, sc in enumerate(scenario_config):
+        scenario = Scenario(**sc)
 
-    # for sim_time in xrange(conf.simulation_count):
-    simulation.simulate()
+        outdir = data_dir + ('/scenario%02d' % i)
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
+        months = args.months if args.months else scenario.N_Months
+        comb_size = args.comb_size if args.comb_size else scenario.honeycomb_size_in_hive
+        bee_size = args.bee_size if args.bee_size else scenario.bee_size_in_honeycomb
+
+        output_config(conf, comb_size, bee_size, months,
+                      pool_remain.small_pool_ratio(bee_size))
+
+        simulation = Simulation(comb_size, bee_size, months,
+                                pool_remain.small_pool_ratio(bee_size),
+                                calc_max_premium_ratio,
+                                scenario.global_reserve_fund,
+                                conf, scenario, outdir, output_fig)
+
+        # for sim_time in xrange(conf.simulation_count):
+        simulation.simulate()
 

@@ -75,9 +75,13 @@ class HiveTestCases(unittest.TestCase):
         pass
 
     def testScenario(self):
-        from scenarios import Scenario, scenarios
-        s = Scenario(**(scenarios[0]))
-        self.assertEqual(12, s.N_Months)
+        from scenarios import Scenario, scenario_config
+        s = []
+        for sc in scenario_config:
+            s.append(Scenario(**sc))
+
+        self.assertEqual(12, s[0].N_Months)
+        self.assertEqual(1000, s[0].honeycomb_size_in_hive)
 
 
 if __name__ == '__main__':
