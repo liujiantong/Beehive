@@ -6,6 +6,7 @@ import random
 import math
 import logging
 import argparse
+import conf
 
 from functools import reduce
 import numpy as np
@@ -23,12 +24,11 @@ class BankruptException(Exception):
 
 class Beehive:
 
-    def __init__(self, hive_id, reserve_fund, calc_max_premium, cnf, scenario):
+    def __init__(self, hive_id, reserve_fund, calc_max_premium, scenario):
         self.id = hive_id
         self.all_honeycombs = []
         self.reserve_fund = reserve_fund
         self.calc_max_premium = calc_max_premium
-        self.cnf = cnf
         self.scenario = scenario
 
     def charge(self, bee0, fee):
@@ -189,39 +189,38 @@ class Bee:
 class Simulation:
 
     def __init__(self, comb_size, bee_size, months, ratio, calc_max_premium,
-                 global_reserve_fund, cnf, scenario, out_dir, output_fig=None):
+                 global_reserve_fund, scenario, out_dir, output_fig=None):
         self.honeycomb_size = comb_size
         self.bee_size = bee_size
         self.months = months
         self.pool_ratio = ratio
         self.calc_max_premium = calc_max_premium
         self.output_fig = output_fig
-        self.cnf = cnf
         self.scenario = scenario
         self.out_dir = out_dir
 
         self.the_comb_id = 0
         self.the_bee_id = 0
-        self.the_hive = Beehive(0, global_reserve_fund, calc_max_premium, cnf, scenario)
+        self.the_hive = Beehive(0, global_reserve_fund, calc_max_premium, scenario)
 
     @staticmethod
-    def generate_premium(cnf, size):
-        return np.random.normal(cnf.premium_mu, cnf.premium_sigma, size)
+    def generate_premium(size):
+        return np.random.normal(conf.premium_mu, conf.premium_sigma, size)
 
     @staticmethod
-    def generate_charge(cnf, size):
-        return np.random.normal(cnf.charge_mu, cnf.charge_sigma, size)
+    def generate_charge(size):
+        return np.random.normal(conf.charge_mu, conf.charge_sigma, size)
 
     @staticmethod
-    def generate_claim_event(cnf, days):
-        return np.random.poisson(cnf.claim_freq_lambda, days)
+    def generate_claim_event(days):
+        return np.random.poisson(conf.claim_freq_lambda, days)
 
     @staticmethod
-    def generate_charge_gamma(cnf, size):
-        return cnf.charge_gamma_value * np.random.gamma(cnf.charge_gamma_shape, cnf.charge_gamma_scale, size)
+    def generate_charge_gamma(size):
+        return conf.charge_gamma_value * np.random.gamma(conf.charge_gamma_shape, conf.charge_gamma_scale, size)
 
     def simulate(self):
-        premiums = Simulation.generate_premium(self.cnf, self.honeycomb_size * self.bee_size)
+        premiums = Simulation.generate_premium(self.honeycomb_size * self.bee_size)
         for i in xrange(self.honeycomb_size):
             self.the_comb_id += 1
             comb = Honeycomb(self.the_comb_id, self.the_hive)
@@ -240,11 +239,11 @@ class Simulation:
         days_in_month = 30
         # for evt_num in Simulation.generate_claim_event(days):
         for m0nth in xrange(self.months):
-            for evt_num in Simulation.generate_claim_event(self.cnf, days_in_month):
+            for evt_num in Simulation.generate_claim_event(days_in_month):
                 day_cntr += 1
                 try:
                     # charges = Simulation.generate_charge(evt_num)
-                    charges = Simulation.generate_charge_gamma(self.cnf, evt_num)
+                    charges = Simulation.generate_charge_gamma(evt_num)
                     for i in xrange(evt_num):
                         evt_sum += 1
                         bee = random.choice(self.the_hive.bees())
@@ -256,9 +255,9 @@ class Simulation:
                     logging.warn(e)
                     break
 
-            self.the_hive.write_detail_csv(self.out_dir + '/' + self.cnf.bees_detail_file % (m0nth + 1))
+            self.the_hive.write_detail_csv(self.out_dir + '/' + conf.bees_detail_file % (m0nth + 1))
 
-        self.the_hive.write_summary_csv(self.out_dir + '/' + self.cnf.hive_stats_file)
+        self.the_hive.write_summary_csv(self.out_dir + '/' + conf.hive_stats_file)
 
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
@@ -276,7 +275,7 @@ def calc_max_premium_ratio(pool_balance):
     return pool_balance * scenario.max_premium_ratio
 
 
-def output_config(cnf, honeycomb_size, bee_size, months, ratio):
+def output_config(honeycomb_size, bee_size, months, ratio):
     line_str = "====================================================================="
     config_str = "%s\n" \
                  "  蜂巢小组总数:\t\t%d\n" \
@@ -292,10 +291,10 @@ def output_config(cnf, honeycomb_size, bee_size, months, ratio):
                  % (line_str,
                     honeycomb_size, bee_size, months, ratio,
                     line_str,
-                    cnf.claim_freq_lambda,
-                    cnf.premium_mu, cnf.premium_sigma,
-                    cnf.charge_mu, cnf.charge_sigma,
-                    cnf.charge_gamma_shape, 1/cnf.charge_gamma_scale,
+                    conf.claim_freq_lambda,
+                    conf.premium_mu, conf.premium_sigma,
+                    conf.charge_mu, conf.charge_sigma,
+                    conf.charge_gamma_shape, 1/conf.charge_gamma_scale,
                     line_str)
     logging.info(config_str)
 
@@ -329,7 +328,6 @@ def output_figure(beehive, output_fig):
 
 
 if __name__ == "__main__":
-    import conf
     from scenarios import Scenario, scenario_config
 
     logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -361,14 +359,14 @@ if __name__ == "__main__":
         comb_size = args.comb_size if args.comb_size else scenario.honeycomb_size_in_hive
         bee_size = args.bee_size if args.bee_size else scenario.bee_size_in_honeycomb
 
-        output_config(conf, comb_size, bee_size, months,
+        output_config(comb_size, bee_size, months,
                       pool_remain.small_pool_ratio(bee_size))
 
         simulation = Simulation(comb_size, bee_size, months,
                                 pool_remain.small_pool_ratio(bee_size),
                                 calc_max_premium_ratio,
                                 scenario.global_reserve_fund,
-                                conf, scenario, outdir, output_fig)
+                                scenario, outdir, output_fig)
 
         # for sim_time in xrange(conf.simulation_count):
         simulation.simulate()
