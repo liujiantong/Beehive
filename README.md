@@ -90,10 +90,15 @@ beehive.py 运行结束后, 将生成模拟结果, 存放在 ./data 目录下.
 在data目录下, 每个scenario 将会生成一个子目录, 例如上面的例子将生成 scenario00 和 scenario01 两个子目录, 存放模拟结果的CSV文件.
 
 模拟结果的CSV文件, 分为以下两类:
+
 1. 每月汇总结果输出
+
     - 文件名字格式为: **m%02d_hive_stats.csv**, 例如第2个月份的模拟结果文件为: m02_hive_stats.csv
+    
 2. 每月明细结果
+
     - 文件名字格式为: **m%02d_bees_detail.csv**, 例如第2个月份的模拟结果文件为: m02_bees_detail.csv
+    
 
 ### 每月汇总结果输出
 * 会员编号
