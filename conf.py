@@ -4,8 +4,9 @@
 default_fig_name = 'beehive-simulation.png'
 
 # 每月明细结果CSV
-bees_detail_file = 'bees_detail_m%02d.csv'
-hive_stats_file = 'hive_stats.csv'
+bees_detail_file_m = 'm%02d_bees_detail.csv'
+hive_stats_file_m = 'm%02d_hive_stats.csv'
+hive_stats_file = 'hive_stats_all.csv'
 
 # 投保分布参数
 premium_mu = 4000

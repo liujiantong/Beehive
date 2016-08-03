@@ -255,9 +255,10 @@ class Simulation:
                     logging.warn(e)
                     break
 
-            self.the_hive.write_detail_csv(self.out_dir + '/' + conf.bees_detail_file % (m0nth + 1))
+            self.the_hive.write_detail_csv(self.out_dir + '/' + conf.bees_detail_file_m % (m0nth + 1))
+            self.the_hive.write_summary_csv(self.out_dir + '/' + conf.hive_stats_file_m % (m0nth + 1))
 
-        self.the_hive.write_summary_csv(self.out_dir + '/' + conf.hive_stats_file)
+        # self.the_hive.write_summary_csv(self.out_dir + '/' + conf.hive_stats_file)
 
         logging.info("Beehive:%s", self.the_hive)
         # logging.info("Remaining:%d in Beehive", the_hive.balance)
