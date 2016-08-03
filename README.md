@@ -1,6 +1,6 @@
 # 蜂巢互助模型模拟程序
 
-蜂巢互助模型模拟程序通过模拟蜂巢模型的运行机制, 评估商业模型的风险水平.
+蜂巢互助模型模拟程序通过模拟蜂巢模型的运行机制, 评估其保险商业模型的风险水平.
 
 
 ## 安装依赖
@@ -11,7 +11,7 @@
 
 ## 快速使用
 
-1. git clone http://githup.com/liujiantong/Beehive
+1. git clone https://github.com/liujiantong/Beehive.git
 2. cd Beehive
 3. python ./beehive.py
 
