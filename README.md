@@ -86,7 +86,8 @@ scenario_config = [
 ## 生成模拟结果
 
 beehive.py 运行结束后, 将生成模拟结果, 存放在 ./data 目录下. 
-在data目录下, 每个scenario 将会生成一个子目录, 例如上面的例子将生成 scenario00 和 scenario01 两个子目录, 存放模拟结果的CSV文件.
+在data目录下, 每个scenario 将会生成一个子目录, 例如上面的例子将生成 scenario00 和 scenario01 两个子目录, 
+存放模拟结果的CSV文件和模拟结果统计直方图 (需要在命令行指定-o 参数).
 
 模拟结果的CSV文件, 分为以下两类:
 
