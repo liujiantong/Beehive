@@ -300,11 +300,23 @@ def output_config(honeycomb_size, bee_size, months, ratio):
     logging.info(config_str)
 
 
+def os_name():
+    import platform
+    return platform.system()
+
+
 def output_figure(beehive, output_fig):
     import matplotlib.pyplot as plt
     from pylab import mpl
 
-    mpl.rcParams['font.sans-serif'] = ['AppleGothic']
+    osname = os_name()
+    if osname == 'Darwin':
+        mpl.rcParams['font.sans-serif'] = ['AppleGothic']
+    elif osname == 'Windows':
+        mpl.rcParams['font.sans-serif'] = ['SimHei']
+    else:
+        # Linux
+        mpl.rcParams['font.sans-serif'] = ['SimHei']
     mpl.rcParams['axes.unicode_minus'] = False
 
     x0 = [comb.balance() for comb in beehive.all_honeycombs]
